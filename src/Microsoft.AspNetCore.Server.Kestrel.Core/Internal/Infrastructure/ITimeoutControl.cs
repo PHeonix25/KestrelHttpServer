@@ -6,6 +6,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure
     public interface ITimeoutControl
     {
         bool TimedOut { get; }
+        bool WriteTimedOut { get; }
 
         void SetTimeout(long ticks, TimeoutAction timeoutAction);
         void ResetTimeout(long ticks, TimeoutAction timeoutAction);
@@ -16,5 +17,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure
         void ResumeTimingReads();
         void StopTimingReads();
         void BytesRead(int count);
+
+        void StartTimingWrite();
+        void StopTimingWrite();
     }
 }

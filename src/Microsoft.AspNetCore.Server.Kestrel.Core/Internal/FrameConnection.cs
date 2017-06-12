@@ -35,6 +35,10 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
         private long _readTimingElapsedTicks;
         private long _readTimingBytesRead;
 
+        private object _writeTimingLock = new object();
+        private bool _writeTimingEnabled;
+        private long _writeTimingElapsedTicks;
+
         private Task _lifetimeTask;
 
         public FrameConnection(FrameConnectionContext context)
@@ -46,8 +50,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
         internal Frame Frame => _frame;
         internal IDebugger Debugger { get; set; } = DebuggerWrapper.Singleton;
 
-
         public bool TimedOut { get; private set; }
+        public bool WriteTimedOut { get; private set; }
 
         public string ConnectionId => _context.ConnectionId;
         public IPipeWriter Input => _context.Input.Writer;
@@ -310,6 +314,20 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
                         }
                     }
                 }
+
+                lock (_writeTimingLock)
+                {
+                    if (_writeTimingEnabled)
+                    {
+                        _writeTimingElapsedTicks += timestamp - _lastTimestamp;
+
+                        if (_writeTimingElapsedTicks > TimeSpan.FromSeconds(5).Ticks)
+                        {
+                            TimedOut = true;
+                            _frame.Abort(error: null);
+                        }
+                    }
+                }
             }
 
             Interlocked.Exchange(ref _lastTimestamp, timestamp);
@@ -380,6 +398,23 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal
         public void BytesRead(int count)
         {
             Interlocked.Add(ref _readTimingBytesRead, count);
+        }
+
+        public void StartTimingWrite()
+        {
+            lock (_writeTimingLock)
+            {
+                _writeTimingElapsedTicks = 0;
+                _writeTimingEnabled = true;
+            }
+        }
+
+        public void StopTimingWrite()
+        {
+            lock (_writeTimingLock)
+            {
+                _writeTimingEnabled = false;
+            }
         }
     }
 }

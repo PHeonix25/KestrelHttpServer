@@ -3,7 +3,6 @@
 
 using System;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
-using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure;
 using Microsoft.AspNetCore.Server.Kestrel.Internal.System.IO.Pipelines;
 using Microsoft.AspNetCore.Testing;
 using Moq;
@@ -63,7 +62,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Tests
                 }
             };
             var frame = new Frame<object>(null, frameContext);
-            var socketOutput = new OutputProducer(pipe, "0", serviceContext.Log);
+            var socketOutput = new OutputProducer(pipe, "0", serviceContext.Log, _pipeFactory);
 
             return socketOutput;
         }
